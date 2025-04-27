@@ -339,8 +339,9 @@
         
                 <div class="md:col-span-3">
                     <h2 class="text-3xl font-heading font-bold text-center md:text-left text-text-dark mb-12">Tất Cả Sản Phẩm</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        
+                    <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"> </div>
+                    <p id="no-results-message" class="text-center text-text-light mt-8 hidden">Không tìm thấy sản phẩm nào phù hợp.</p>
+                 </div>
                         <div class="product-card bg-white rounded-lg shadow-md overflow-hidden border flex flex-col"
                              data-id="1"
                              data-name="AirPods Pro (2nd generation)"
@@ -1205,7 +1206,9 @@
         const placeOrderButton = document.getElementById('place-order-button');
     
         const toastNotification = document.getElementById('toast-notification');
-        const body = document.body;
+        const body = document.body;const searchInputDesktop = document.getElementById('search-input-desktop');
+        const productGrid = document.getElementById('product-grid');
+        const noResultsMessage = document.getElementById('no-results-message');const allProductCards = productGrid ? Array.from(productGrid.querySelectorAll('.product-card')) : [];
     
         // Header elements (Original)
         const headerSearchInput = document.getElementById('header-search-input');
@@ -1658,8 +1661,6 @@
                     if (colorContainerDiv) colorContainerDiv.classList.add('hidden');
                 }
             }
-    
-    
            // --- Populate Reviews ---
            displayReviews(productData.reviews); // Use the new function
     
@@ -1960,7 +1961,42 @@
                 toggleBodyOverflow(false); // Allow background scroll if nothing else prevents it
             }
         }
-    
+     // --- Thêm hàm xử lý tìm kiếm ---
+    function filterProducts() {
+        if (!searchInputDesktop || !productGrid || !noResultsMessage || allProductCards.length === 0) {
+            console.warn("Search elements not fully initialized.");
+            return; // Thoát nếu thiếu phần tử cần thiết
+        }
+
+        const searchTerm = searchInputDesktop.value.toLowerCase().trim();
+        let visibleCount = 0;
+
+        allProductCards.forEach(card => {
+            // Lấy tên sản phẩm từ data-name attribute (đáng tin cậy hơn textContent)
+            const productName = card.dataset.name ? card.dataset.name.toLowerCase() : '';
+            // Lấy mô tả ngắn để tìm kiếm thêm (tùy chọn)
+            const shortDescElement = card.querySelector('.product-short-desc');
+            const shortDesc = shortDescElement ? shortDescElement.textContent.toLowerCase() : '';
+
+            // Kiểm tra xem tên SP hoặc mô tả ngắn có chứa từ khóa không
+            const isMatch = productName.includes(searchTerm) || shortDesc.includes(searchTerm);
+
+            if (isMatch) {
+                card.style.display = 'flex'; // Hiển thị thẻ (dùng flex vì thẻ gốc là flex)
+                visibleCount++;
+            } else {
+                card.style.display = 'none'; // Ẩn thẻ
+            }
+        });
+
+        // Hiển thị hoặc ẩn thông báo "Không có kết quả"
+        if (visibleCount === 0 && searchTerm !== '') {
+            noResultsMessage.classList.remove('hidden');
+        } else {
+            noResultsMessage.classList.add('hidden');
+        }
+    }
+
     
         // --- Event Listeners ---
     
@@ -2126,24 +2162,41 @@
         // Image Slider Listeners
         if (sliderPrevButton) sliderPrevButton.addEventListener('click', () => { prevSlide(); resetSlideInterval(); });
         if (sliderNextButton) sliderNextButton.addEventListener('click', () => { nextSlide(); resetSlideInterval(); });
+        // Tìm kiếm trên Desktop
+         if (searchInputDesktop) {
+        // Sử dụng sự kiện 'input' để lọc ngay khi người dùng gõ
+        searchInputDesktop.addEventListener('input', filterProducts);
+
+        // (Tùy chọn) Xử lý khi nhấn Enter (nếu bạn muốn hành động khác)
+        searchInputDesktop.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Ngăn form submit (nếu có)
+                console.log('Search submitted (optional action):', this.value);
+                // Có thể thêm hành động khác ở đây nếu cần
+              }
+            });
+        } else {
+        console.warn("Desktop search input not found.");
+        }
     
-    
-        // --- Initial Setup ---
+         // --- Trong phần Initial Setup ---
         document.addEventListener('DOMContentLoaded', () => {
-            setupSmoothScroll(); // Initialize smooth scrolling
-            updateCartUI();      // Initialize cart UI on page load
-    
-            // Initialize Image Slider if elements exist and there are slides
-            if (slides.length > 0 && sliderInner && sliderDotsContainer) {
-                updateSliderPosition(); // Set initial position
-                startSlideInterval();   // Start auto-sliding
-            } else {
-                // Optionally hide slider controls if no slides
-                const sliderSection = document.getElementById('image-slider-section');
-                if(sliderSection) sliderSection.style.display = 'none';
-            }
-    
-        });
+        setupSmoothScroll();
+        updateCartUI();
+
+        // Initialize Image Slider... (Mã hiện có của bạn)
+        if (slides.length > 0 && sliderInner && sliderDotsContainer) {
+             updateSliderPosition();
+             startSlideInterval();
+        } else {
+            const sliderSection = document.getElementById('image-slider-section');
+            if(sliderSection) sliderSection.style.display = 'none';
+        }
+
+        // (Thêm dòng này nếu bạn muốn lọc ngay khi trang tải xong nếu input có sẵn giá trị)
+        // filterProducts();
+    });
+
     
     </script>
 </body>
